@@ -389,6 +389,37 @@ class Database:
             return list(reversed(result))
         finally:
             session.close()
+    
+    # Search methods
+    def search_users(self, query: str, exclude_user_id: Optional[int] = None) -> List[Dict]:
+        session = self.get_session()
+        try:
+            search_query = session.query(User).filter(
+                (User.email.ilike(f'%{query}%')) | (User.username.ilike(f'%{query}%'))
+            )
+            if exclude_user_id:
+                search_query = search_query.filter(User.id != exclude_user_id)
+            
+            users = search_query.limit(10).all()
+            result = []
+            for user in users:
+                result.append({
+                    'id': user.id,
+                    'email': user.email,
+                    'username': user.username,
+                    'profile_picture': user.profile_picture
+                })
+            return result
+        finally:
+            session.close()
+    
+    def get_active_chats(self, user_id: int) -> List[Dict]:
+        """Alias for get_user_chats"""
+        return self.get_user_chats(user_id)
+    
+    def get_pending_requests(self, user_id: int) -> List[Dict]:
+        """Alias for get_chat_requests"""
+        return self.get_chat_requests(user_id)
 
 # Global instance
 db = Database()
