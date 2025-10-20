@@ -32,11 +32,14 @@ async def create_chat_request(request: ChatRequest, user: dict = Depends(verify_
         if chat['user1_id'] == request.to_user_id or chat['user2_id'] == request.to_user_id:
             raise HTTPException(status_code=400, detail="Already have active chat with this user")
     
-    # Create request
+    # Create request with expiration (24 hours)
+    from datetime import datetime, timedelta
+    code_expires_at = datetime.now() + timedelta(hours=24)
     request_id = db.create_chat_request(
         from_user_id=user['id'],
         to_user_id=request.to_user_id,
-        verification_code=request.verification_code
+        verification_code=request.verification_code,
+        code_expires_at=code_expires_at
     )
     
     # Notify target user via WebSocket

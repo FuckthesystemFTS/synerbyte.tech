@@ -420,6 +420,51 @@ class Database:
     def get_pending_requests(self, user_id: int) -> List[Dict]:
         """Alias for get_chat_requests"""
         return self.get_chat_requests(user_id)
+    
+    def accept_chat_request(self, request_id: int, verification_code: str) -> int:
+        """Accept a chat request and create a chat"""
+        session = self.get_session()
+        try:
+            # Get the request
+            chat_request = session.query(ChatRequest).filter(ChatRequest.id == request_id).first()
+            if not chat_request:
+                raise Exception("Chat request not found")
+            
+            # Verify code
+            if chat_request.verification_code != verification_code:
+                raise Exception("Invalid verification code")
+            
+            # Check if expired
+            if chat_request.code_expires_at and datetime.utcnow() > chat_request.code_expires_at:
+                raise Exception("Verification code expired")
+            
+            # Check if already accepted
+            if chat_request.status != 'pending':
+                raise Exception("Request already processed")
+            
+            # Create chat
+            chat = Chat(
+                user1_id=chat_request.from_user_id,
+                user2_id=chat_request.to_user_id,
+                shared_secret=verification_code  # Use verification code as shared secret
+            )
+            session.add(chat)
+            
+            # Update request status
+            chat_request.status = 'accepted'
+            
+            session.commit()
+            session.refresh(chat)
+            return chat.id
+        except Exception as e:
+            session.rollback()
+            raise e
+        finally:
+            session.close()
+    
+    def get_chat(self, chat_id: int) -> Optional[Dict]:
+        """Alias for get_chat_by_id"""
+        return self.get_chat_by_id(chat_id)
 
 # Global instance
 db = Database()
