@@ -1,0 +1,8 @@
+{
+  "name": "synerchat",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "cd app/frontend && npm install && npm run build",
+    "heroku-postbuild": "npm run build"
+  }
+}
