@@ -1,0 +1,41 @@
+# 🚀 COMANDI PER DEPLOY SU HEROKU
+
+# 1. Login su Heroku
+heroku login
+
+# 2. Crea l'app (scegli un nome unico)
+heroku create synerchat-app
+
+# 3. Configura le variabili d'ambiente
+heroku config:set SECRET_KEY="your-super-secret-key-change-this-$(openssl rand -hex 16)"
+heroku config:set CORS_ORIGINS="*"
+
+# 4. Inizializza Git (se non già fatto)
+git init
+git add .
+git commit -m "Initial deployment - Synerchat v1.0"
+
+# 5. Collega a Heroku
+heroku git:remote -a synechat-app
+
+# 6. Deploy!
+git push heroku main
+
+# 7. Verifica il deploy
+heroku logs --tail
+
+# 8. Apri l'app
+heroku open
+
+# 9. Verifica lo stato
+heroku ps
+
+# COMANDI UTILI:
+# - Riavvia app: heroku restart
+# - Vedi logs: herola logs --tail
+# - Scala dyno: heroku ps:scale web=1
+# - Config vars: heroku config
+# - Dashboard: heroku dashboard
+
+# NOTA: Se usi Git con un branch diverso da 'main', usa:
+# git push heroku YOUR_BRANCH:main

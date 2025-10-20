@@ -1,0 +1,232 @@
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import { api, Chat, Message, ChatRequest } from '../lib/api';
+import { useAuth } from './AuthContext';
+
+interface ChatContextType {
+  chats: Chat[];
+  activeChat: Chat | null;
+  messages: Message[];
+  requests: ChatRequest[];
+  setActiveChat: (chat: Chat | null) => void;
+  sendMessage: (message: string, messageType?: string) => void;
+  refreshChats: () => Promise<void>;
+  refreshRequests: () => Promise<void>;
+  sendChatRequest: (userId: number, code: string) => Promise<void>;
+  acceptRequest: (requestId: number, code: string) => Promise<void>;
+  verifyChat: (chatId: number, code: string) => Promise<void>;
+}
+
+const ChatContext = createContext<ChatContextType | undefined>(undefined);
+
+export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user } = useAuth();
+  const [chats, setChats] = useState<Chat[]>([]);
+  const [activeChat, setActiveChat] = useState<Chat | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [requests, setRequests] = useState<ChatRequest[]>([]);
+  const wsRef = useRef<WebSocket | null>(null);
+
+  useEffect(() => {
+    if (user) {
+      refreshChats();
+      refreshRequests();
+      connectWebSocket();
+    } else {
+      disconnectWebSocket();
+    }
+
+    return () => {
+      disconnectWebSocket();
+    };
+  }, [user]);
+
+  useEffect(() => {
+    if (activeChat) {
+      loadMessages(activeChat.id);
+    } else {
+      setMessages([]);
+    }
+  }, [activeChat]);
+
+  const connectWebSocket = () => {
+    try {
+      const ws = api.createWebSocket();
+      
+      ws.onopen = () => {
+        console.log('WebSocket connected');
+      };
+
+      ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        handleWebSocketMessage(data);
+      };
+
+      ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+      };
+
+      ws.onclose = () => {
+        console.log('WebSocket disconnected');
+        // Reconnect after 3 seconds
+        setTimeout(() => {
+          if (user) {
+            connectWebSocket();
+          }
+        }, 3000);
+      };
+
+      wsRef.current = ws;
+    } catch (error) {
+      console.error('Failed to connect WebSocket:', error);
+    }
+  };
+
+  const disconnectWebSocket = () => {
+    if (wsRef.current) {
+      wsRef.current.close();
+      wsRef.current = null;
+    }
+  };
+
+  const handleWebSocketMessage = (data: any) => {
+    switch (data.type) {
+      case 'message':
+        // Add message to list if it's for active chat
+        if (activeChat && data.data.chat_id === activeChat.id) {
+          setMessages(prev => [...prev, data.data]);
+        }
+        break;
+
+      case 'chat_request':
+        // Refresh requests
+        refreshRequests();
+        break;
+
+      case 'chat_accepted':
+        // Refresh chats
+        refreshChats();
+        break;
+
+      case 'verification_required':
+        // Show verification prompt
+        alert(`Verification required for chat ${data.data.chat_id}! You have 5 minutes.`);
+        refreshChats();
+        break;
+
+      case 'chat_verified':
+        // Refresh chat status
+        refreshChats();
+        break;
+
+      case 'chat_destroyed':
+        // Remove chat
+        alert(`Chat ${data.data.chat_id} was destroyed: ${data.data.reason}`);
+        if (activeChat && activeChat.id === data.data.chat_id) {
+          setActiveChat(null);
+        }
+        refreshChats();
+        break;
+
+      case 'chat_cleared':
+        // Clear messages
+        if (activeChat && activeChat.id === data.data.chat_id) {
+          setMessages([]);
+        }
+        break;
+
+      case 'chat_deleted':
+        // Chat permanently deleted
+        alert('Chat has been deleted by mutual consent');
+        if (activeChat && activeChat.id === data.data.chat_id) {
+          setActiveChat(null);
+        }
+        refreshChats();
+        break;
+
+      case 'delete_requested':
+        // Other user wants to delete chat
+        alert('The other user wants to delete this chat. If you also want to delete it, click "Delete Chat"');
+        break;
+    }
+  };
+
+  const refreshChats = async () => {
+    try {
+      const response = await api.getActiveChats();
+      setChats(response.chats);
+    } catch (error) {
+      console.error('Failed to refresh chats:', error);
+    }
+  };
+
+  const refreshRequests = async () => {
+    try {
+      const response = await api.getPendingRequests();
+      setRequests(response.requests);
+    } catch (error) {
+      console.error('Failed to refresh requests:', error);
+    }
+  };
+
+  const loadMessages = async (chatId: number) => {
+    try {
+      const response = await api.getMessages(chatId);
+      setMessages(response.messages);
+    } catch (error) {
+      console.error('Failed to load messages:', error);
+    }
+  };
+
+  const sendMessage = (message: string, messageType: string = 'text') => {
+    if (!activeChat || !wsRef.current) return;
+
+    wsRef.current.send(JSON.stringify({
+      type: 'message',
+      chat_id: activeChat.id,
+      encrypted_content: message, // Will be encrypted by caller
+      message_type: messageType,
+    }));
+  };
+
+  const sendChatRequest = async (userId: number, code: string) => {
+    await api.sendChatRequest(userId, code);
+    // Request sent, no need to refresh here as WebSocket will notify
+  };
+
+  const acceptRequest = async (requestId: number, code: string) => {
+    await api.acceptChatRequest(requestId, code);
+    await refreshRequests();
+    await refreshChats();
+  };
+
+  const verifyChat = async (chatId: number, code: string) => {
+    await api.verifyChat(chatId, code);
+    await refreshChats();
+  };
+
+  return (
+    <ChatContext.Provider value={{
+      chats,
+      activeChat,
+      messages,
+      requests,
+      setActiveChat,
+      sendMessage,
+      refreshChats,
+      refreshRequests,
+      sendChatRequest,
+      acceptRequest,
+      verifyChat,
+    }}>
+      {children}
+    </ChatContext.Provider>
+  );
+};
+
+export const useChat = () => {
+  const context = useContext(ChatContext);
+  if (!context) {
+    throw new Error('useChat must be used within ChatProvider');
+  }
+  return context;
+};

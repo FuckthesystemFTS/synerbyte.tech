@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Synerchat Backend</title>
+</head>
+<body>
+    <h1>Test Synerchat Backend</h1>
+    
+    <h2>1. Test Health</h2>
+    <button onclick="testHealth()">Test /healthz</button>
+    <pre id="health-result"></pre>
+    
+    <h2>2. Test Register</h2>
+    <input type="email" id="email" placeholder="Email" value="test@test.com"><br>
+    <input type="password" id="password" placeholder="Password" value="test123"><br>
+    <button onclick="testRegister()">Register</button>
+    <pre id="register-result"></pre>
+    
+    <script>
+        async function testHealth() {
+            try {
+                const response = await fetch('http://localhost:8000/healthz');
+                const data = await response.json();
+                document.getElementById('health-result').textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('health-result').textContent = 'Error: ' + error.message;
+            }
+        }
+        
+        async function testRegister() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                const response = await fetch('http://localhost:8000/auth/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await response.json();
+                document.getElementById('register-result').textContent = 
+                    'Status: ' + response.status + '\n' +
+                    JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('register-result').textContent = 'Error: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>
