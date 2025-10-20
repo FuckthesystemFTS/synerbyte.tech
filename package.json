@@ -2,7 +2,7 @@
   "name": "synerchat",
   "version": "1.0.0",
   "scripts": {
-    "build": "cd app/frontend && npm install --include=dev && npm run build",
+    "build": "cd app/frontend && npm install --include=dev && npm run build && cd ../.. && mkdir -p app/backend/static && cp -r app/frontend/dist/* app/backend/static/",
     "heroku-postbuild": "npm run build"
   },
   "engines": {
