@@ -103,30 +103,17 @@ async def get_active_chats(user: dict = Depends(verify_token)):
     # Format chats with other user info
     formatted_chats = []
     for chat in chats:
-        if chat['user1_id'] == user['id']:
-            other_user = {
-                "id": chat['user2_id'],
-                "email": chat['user2_email'],
-                "username": chat['user2_username'],
-                "profile_picture": chat['user2_picture'],
-                "public_key": chat['user2_public_key']
-            }
-        else:
-            other_user = {
-                "id": chat['user1_id'],
-                "email": chat['user1_email'],
-                "username": chat['user1_username'],
-                "profile_picture": chat['user1_picture'],
-                "public_key": chat['user1_public_key']
-            }
+        other_user = {
+            "id": chat['other_user_id'],
+            "email": chat.get('other_user_email'),
+            "username": chat.get('other_user_username'),
+            "profile_picture": chat.get('other_user_profile_picture')
+        }
         
         formatted_chats.append({
             "id": chat['id'],
             "other_user": other_user,
-            "last_verification": chat['last_verification'],
-            "next_verification": chat['next_verification'],
-            "verification_pending": chat['verification_pending'],
-            "created_at": chat['created_at']
+            "created_at": chat.get('created_at')
         })
     
     return {"chats": formatted_chats}

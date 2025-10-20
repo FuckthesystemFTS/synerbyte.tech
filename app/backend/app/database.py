@@ -422,17 +422,18 @@ class Database:
         return self.get_chat_requests(user_id)
     
     def accept_chat_request(self, request_id: int, verification_code: str) -> int:
-        """Accept a chat request and create a chat"""
+        """Accept a chat request and create a chat
+        
+        Args:
+            request_id: ID of the chat request
+            verification_code: The receiver's verification code (not the sender's)
+        """
         session = self.get_session()
         try:
             # Get the request
             chat_request = session.query(ChatRequest).filter(ChatRequest.id == request_id).first()
             if not chat_request:
                 raise Exception("Chat request not found")
-            
-            # Verify code
-            if chat_request.verification_code != verification_code:
-                raise Exception("Invalid verification code")
             
             # Check if expired
             if chat_request.code_expires_at and datetime.utcnow() > chat_request.code_expires_at:
@@ -442,11 +443,15 @@ class Database:
             if chat_request.status != 'pending':
                 raise Exception("Request already processed")
             
+            # Combine both verification codes to create shared secret
+            # Sender's code + Receiver's code
+            shared_secret = chat_request.verification_code + verification_code
+            
             # Create chat
             chat = Chat(
                 user1_id=chat_request.from_user_id,
                 user2_id=chat_request.to_user_id,
-                shared_secret=verification_code  # Use verification code as shared secret
+                shared_secret=shared_secret
             )
             session.add(chat)
             
