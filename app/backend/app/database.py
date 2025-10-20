@@ -67,6 +67,14 @@ class AuthToken(Base):
     expires_at = Column(DateTime, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+class ChatDeletionRequest(Base):
+    __tablename__ = 'chat_deletion_requests'
+    
+    id = Column(Integer, primary_key=True, index=True)
+    chat_id = Column(Integer, ForeignKey('chats.id'), nullable=False)
+    requester_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
 # Database wrapper class
 class Database:
     def __init__(self):
@@ -491,9 +499,37 @@ class Database:
     
     def request_chat_deletion(self, chat_id: int, user_id: int) -> bool:
         """Request chat deletion - returns True if both users agreed"""
-        # For now, just delete immediately
-        # In a real app, you'd track deletion requests from both users
-        return self.delete_chat(chat_id)
+        session = self.get_session()
+        try:
+            # Check if there's already a request from the other user
+            existing_request = session.query(ChatDeletionRequest).filter(
+                ChatDeletionRequest.chat_id == chat_id,
+                ChatDeletionRequest.requester_id != user_id
+            ).first()
+            
+            if existing_request:
+                # Both users agreed - delete the chat
+                session.query(ChatDeletionRequest).filter(
+                    ChatDeletionRequest.chat_id == chat_id
+                ).delete()
+                session.commit()
+                self.delete_chat(chat_id)
+                return True
+            else:
+                # First request - save it
+                deletion_request = ChatDeletionRequest(
+                    chat_id=chat_id,
+                    requester_id=user_id
+                )
+                session.add(deletion_request)
+                session.commit()
+                return False
+        except Exception as e:
+            session.rollback()
+            print(f"Error requesting chat deletion: {e}")
+            return False
+        finally:
+            session.close()
     
     def delete_chat(self, chat_id: int) -> bool:
         """Delete a chat and all its messages"""

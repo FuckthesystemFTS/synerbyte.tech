@@ -132,6 +132,44 @@ async def get_messages(chat_id: int, user: dict = Depends(verify_token)):
     messages = db.get_messages(chat_id)
     return {"messages": messages}
 
+@router.post("/send")
+async def send_message(message: Message, user: dict = Depends(verify_token)):
+    """Send a message in a chat"""
+    # Verify user is part of chat
+    chat = db.get_chat(message.chat_id)
+    if not chat:
+        raise HTTPException(status_code=404, detail="Chat not found")
+    
+    if chat['user1_id'] != user['id'] and chat['user2_id'] != user['id']:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    # Save message
+    message_id = db.create_message(
+        chat_id=message.chat_id,
+        sender_id=user['id'],
+        encrypted_content=message.content,
+        message_type=message.message_type or 'text'
+    )
+    
+    # Get other user ID
+    other_user_id = chat['user2_id'] if chat['user1_id'] == user['id'] else chat['user1_id']
+    
+    # Send via WebSocket to both users
+    message_data = {
+        "id": message_id,
+        "chat_id": message.chat_id,
+        "sender_id": user['id'],
+        "content": message.content,
+        "message_type": message.message_type or 'text',
+        "created_at": "now"
+    }
+    
+    # Broadcast to both users in the chat
+    await manager.broadcast_to_user(other_user_id, "new_message", message_data)
+    await manager.broadcast_to_user(user['id'], "new_message", message_data)
+    
+    return {"message_id": message_id, "status": "sent"}
+
 @router.post("/verify")
 async def verify_chat(verify: VerifyChat, user: dict = Depends(verify_token)):
     """Verify chat with code to keep it alive"""
@@ -205,20 +243,36 @@ async def request_delete_chat(chat_id: int, user: dict = Depends(verify_token)):
     if chat['user1_id'] != user['id'] and chat['user2_id'] != user['id']:
         raise HTTPException(status_code=403, detail="Not authorized")
     
+    # Get other user ID
+    other_user_id = chat['user2_id'] if chat['user1_id'] == user['id'] else chat['user1_id']
+    
     # Request deletion
     both_agreed = db.request_chat_deletion(chat_id, user['id'])
     
     if both_agreed:
         # Both users agreed, chat is deleted
-        await manager.send_to_chat(
-            message={
-                "type": "chat_deleted",
-                "data": {"chat_id": chat_id}
-            },
-            chat_id=chat_id
+        await manager.broadcast_to_user(
+            user_id=chat['user1_id'],
+            message_type="chat_deleted",
+            data={"chat_id": chat_id}
+        )
+        await manager.broadcast_to_user(
+            user_id=chat['user2_id'],
+            message_type="chat_deleted",
+            data={"chat_id": chat_id}
         )
         return {"status": "deleted", "message": "Chat deleted"}
     else:
+        # Notify other user about deletion request
+        await manager.broadcast_to_user(
+            user_id=other_user_id,
+            message_type="deletion_request",
+            data={
+                "chat_id": chat_id,
+                "requester_id": user['id'],
+                "requester_username": user.get('username', user['email'])
+            }
+        )
         # Notify other user that this user wants to delete
         await manager.send_to_chat(
             message={
