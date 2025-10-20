@@ -470,6 +470,47 @@ class Database:
     def get_chat(self, chat_id: int) -> Optional[Dict]:
         """Alias for get_chat_by_id"""
         return self.get_chat_by_id(chat_id)
+    
+    def get_messages(self, chat_id: int, limit: int = 100) -> List[Dict]:
+        """Alias for get_chat_messages"""
+        return self.get_chat_messages(chat_id, limit)
+    
+    def clear_messages(self, chat_id: int) -> bool:
+        """Delete all messages in a chat"""
+        session = self.get_session()
+        try:
+            session.query(Message).filter(Message.chat_id == chat_id).delete()
+            session.commit()
+            return True
+        except Exception as e:
+            session.rollback()
+            print(f"Error clearing messages: {e}")
+            return False
+        finally:
+            session.close()
+    
+    def request_chat_deletion(self, chat_id: int, user_id: int) -> bool:
+        """Request chat deletion - returns True if both users agreed"""
+        # For now, just delete immediately
+        # In a real app, you'd track deletion requests from both users
+        return self.delete_chat(chat_id)
+    
+    def delete_chat(self, chat_id: int) -> bool:
+        """Delete a chat and all its messages"""
+        session = self.get_session()
+        try:
+            # Delete all messages first
+            session.query(Message).filter(Message.chat_id == chat_id).delete()
+            # Delete the chat
+            session.query(Chat).filter(Chat.id == chat_id).delete()
+            session.commit()
+            return True
+        except Exception as e:
+            session.rollback()
+            print(f"Error deleting chat: {e}")
+            return False
+        finally:
+            session.close()
 
 # Global instance
 db = Database()
