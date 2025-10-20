@@ -21,7 +21,7 @@ def create_session(user_id: int) -> tuple[str, str]:
     """Create session and return token and expiry"""
     token = generate_token()
     expires_at = datetime.now() + timedelta(days=7)
-    db.create_session(user_id, token, expires_at.isoformat())
+    db.create_token(user_id, token, expires_at)
     return token, expires_at.isoformat()
 
 def verify_token(authorization: Optional[str] = Header(None)) -> dict:
@@ -33,7 +33,7 @@ def verify_token(authorization: Optional[str] = Header(None)) -> dict:
         raise HTTPException(status_code=401, detail="Invalid authorization format")
     
     token = authorization.replace("Bearer ", "")
-    session = db.get_session(token)
+    session = db.get_token(token)
     
     if not session:
         raise HTTPException(status_code=401, detail="Invalid token")
@@ -41,7 +41,7 @@ def verify_token(authorization: Optional[str] = Header(None)) -> dict:
     # Check expiry
     expires_at = datetime.fromisoformat(session['expires_at'])
     if datetime.now() > expires_at:
-        db.delete_session(token)
+        db.delete_token(token)
         raise HTTPException(status_code=401, detail="Token expired")
     
     user = db.get_user_by_id(session['user_id'])
