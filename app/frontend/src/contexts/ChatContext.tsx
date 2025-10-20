@@ -91,10 +91,13 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const handleWebSocketMessage = (data: any) => {
     switch (data.type) {
       case 'message':
+      case 'new_message':
         // Add message to list if it's for active chat
         if (activeChat && data.data.chat_id === activeChat.id) {
           setMessages(prev => [...prev, data.data]);
         }
+        // Refresh chats to update last message
+        refreshChats();
         break;
 
       case 'chat_request':
@@ -144,8 +147,10 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         break;
 
       case 'delete_requested':
+      case 'deletion_request':
         // Other user wants to delete chat
-        alert('The other user wants to delete this chat. If you also want to delete it, click "Delete Chat"');
+        const username = data.data.requester_username || 'The other user';
+        alert(`${username} wants to delete this chat. If you also want to delete it, click "Delete Chat"`);
         break;
     }
   };
