@@ -59,7 +59,8 @@ class ChatInfo(BaseModel):
 
 class Message(BaseModel):
     chat_id: int
-    encrypted_content: str
+    content: str
+    message_type: Optional[str] = 'text'
 
 class MessageResponse(BaseModel):
     id: int

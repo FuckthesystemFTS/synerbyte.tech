@@ -156,6 +156,13 @@ class ApiClient {
     return this.request(`/chat/messages/${chat_id}`);
   }
 
+  async sendMessage(chat_id: number, content: string, message_type: string = 'text'): Promise<{ message_id: number; status: string }> {
+    return this.request('/chat/send', {
+      method: 'POST',
+      body: JSON.stringify({ chat_id, content, message_type }),
+    });
+  }
+
   async verifyChat(chat_id: number, verification_code: string): Promise<{ status: string }> {
     return this.request('/chat/verify', {
       method: 'POST',
@@ -180,7 +187,9 @@ class ApiClient {
     if (!this.token) {
       throw new Error('No token available');
     }
-    return new WebSocket(`ws://localhost:8000/chat/ws?token=${this.token}`);
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsHost = window.location.hostname === 'localhost' ? 'localhost:8000' : window.location.host;
+    return new WebSocket(`${wsProtocol}//${wsHost}/chat/ws?token=${this.token}`);
   }
 }
 

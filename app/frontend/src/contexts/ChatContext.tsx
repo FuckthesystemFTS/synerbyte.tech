@@ -182,15 +182,16 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const sendMessage = (message: string, messageType: string = 'text') => {
-    if (!activeChat || !wsRef.current) return;
+  const sendMessage = async (message: string, messageType: string = 'text') => {
+    if (!activeChat) return;
 
-    wsRef.current.send(JSON.stringify({
-      type: 'message',
-      chat_id: activeChat.id,
-      encrypted_content: message, // Will be encrypted by caller
-      message_type: messageType,
-    }));
+    try {
+      await api.sendMessage(activeChat.id, message, messageType);
+      // Message will be received via WebSocket
+    } catch (error) {
+      console.error('Failed to send message:', error);
+      throw error;
+    }
   };
 
   const sendChatRequest = async (userId: number, code: string) => {
