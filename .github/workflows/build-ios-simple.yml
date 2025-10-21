@@ -63,25 +63,26 @@ jobs:
             CODE_SIGN_ENTITLEMENTS="" \
             archive
 
-      - name: Export IPA
+      - name: Extract .app from archive
         working-directory: app/frontend/ios/App
         run: |
-          cp ../../ios-export-options.plist exportOptions.plist
-          xcodebuild -exportArchive \
-            -archivePath build/App.xcarchive \
-            -exportPath build \
-            -exportOptionsPlist exportOptions.plist \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO
+          echo "Extracting .app bundle from archive..."
+          mkdir -p build/Payload
+          cp -r build/App.xcarchive/Products/Applications/App.app build/Payload/
+          ls -la build/Payload/
 
-      - name: List files
-        working-directory: app/frontend/ios/App/build
-        run: ls -la
+      - name: Create IPA manually
+        working-directory: app/frontend/ios/App
+        run: |
+          echo "Creating IPA from .app bundle..."
+          cd build
+          zip -r App.ipa Payload
+          ls -lh App.ipa
+          echo "IPA created successfully!"
 
       - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
           name: synerchat-ios
-          path: app/frontend/ios/App/build/*.ipa
+          path: app/frontend/ios/App/build/App.ipa
           if-no-files-found: error

@@ -74,24 +74,22 @@ jobs:
             CODE_SIGN_ENTITLEMENTS="" \
             archive
       
-      - name: Prepare export options
+      - name: Extract .app from archive
         working-directory: app/frontend/ios/App
         run: |
-          # If exportOptions.plist is not present in this folder, copy the provided one
-          if [ ! -f "exportOptions.plist" ]; then
-            cp ../../ios-export-options.plist ./exportOptions.plist
-          fi
+          echo "Extracting .app bundle from archive..."
+          mkdir -p build/Payload
+          cp -r build/App.xcarchive/Products/Applications/App.app build/Payload/
+          ls -la build/Payload/
 
-      - name: Export IPA
+      - name: Create IPA manually
         working-directory: app/frontend/ios/App
         run: |
-          xcodebuild -exportArchive \
-            -archivePath $PWD/build/App.xcarchive \
-            -exportPath $PWD/build \
-            -exportOptionsPlist exportOptions.plist \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO
+          echo "Creating IPA from .app bundle..."
+          cd build
+          zip -r App.ipa Payload
+          ls -lh App.ipa
+          echo "IPA created successfully!"
       
       - name: Upload IPA artifact
         uses: actions/upload-artifact@v4
@@ -104,7 +102,7 @@ jobs:
       - name: Copy IPA to downloads folder
         run: |
           mkdir -p app/backend/downloads
-          cp app/frontend/ios/App/build/*.ipa app/backend/downloads/synerchat.ipa
+          cp app/frontend/ios/App/build/App.ipa app/backend/downloads/synerchat.ipa
       
       - name: Commit and push IPA
         run: |
