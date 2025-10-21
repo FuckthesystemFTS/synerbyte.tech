@@ -26,6 +26,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [messages, setMessages] = useState<any[]>([]);
   const wsRef = useRef<WebSocket | null>(null);
   const activeChatRef = useRef<any>(null);
+  const reconnectTimeoutRef = useRef<any>(null);
+  const isConnectingRef = useRef<boolean>(false);
 
   useEffect(() => {
     activeChatRef.current = activeChat;
@@ -54,11 +56,26 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [activeChat]);
 
   const connectWebSocket = () => {
+    // Prevent multiple simultaneous connection attempts
+    if (isConnectingRef.current || (wsRef.current && wsRef.current.readyState === WebSocket.OPEN)) {
+      console.log('⚠️ WebSocket already connecting or connected, skipping');
+      return;
+    }
+
     try {
+      isConnectingRef.current = true;
+      console.log('🔌 Attempting WebSocket connection...');
+      
       const ws = api.createWebSocket();
       
       ws.onopen = () => {
         console.log('✅ WebSocket connected successfully');
+        isConnectingRef.current = false;
+        // Clear any pending reconnect attempts
+        if (reconnectTimeoutRef.current) {
+          clearTimeout(reconnectTimeoutRef.current);
+          reconnectTimeoutRef.current = null;
+        }
       };
 
       ws.onmessage = (event) => {
@@ -68,30 +85,55 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
 
       ws.onerror = (error) => {
-        console.error('WebSocket error:', error);
+        console.error('❌ WebSocket error:', error);
+        isConnectingRef.current = false;
       };
 
-      ws.onclose = () => {
-        console.log('WebSocket disconnected');
-        // Reconnect after 3 seconds
-        setTimeout(() => {
-          if (user) {
+      ws.onclose = (event) => {
+        console.log('🔌 WebSocket disconnected, code:', event.code, 'reason:', event.reason);
+        isConnectingRef.current = false;
+        wsRef.current = null;
+        
+        // Reconnect after 2 seconds if user is still logged in
+        if (user) {
+          console.log('🔄 Scheduling reconnect in 2 seconds...');
+          reconnectTimeoutRef.current = setTimeout(() => {
+            console.log('🔄 Attempting to reconnect...');
             connectWebSocket();
-          }
-        }, 3000);
+          }, 2000);
+        }
       };
 
       wsRef.current = ws;
     } catch (error) {
-      console.error('Failed to connect WebSocket:', error);
+      console.error('❌ Failed to connect WebSocket:', error);
+      isConnectingRef.current = false;
+      
+      // Retry connection after 3 seconds on error
+      if (user) {
+        reconnectTimeoutRef.current = setTimeout(() => {
+          connectWebSocket();
+        }, 3000);
+      }
     }
   };
 
   const disconnectWebSocket = () => {
+    console.log('🔌 Disconnecting WebSocket...');
+    
+    // Clear any pending reconnect attempts
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
+    
+    // Close WebSocket connection
     if (wsRef.current) {
       wsRef.current.close();
       wsRef.current = null;
     }
+    
+    isConnectingRef.current = false;
   };
 
   const handleWebSocketMessage = (data: any) => {
