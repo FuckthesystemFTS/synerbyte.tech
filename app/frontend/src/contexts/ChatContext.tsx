@@ -21,6 +21,7 @@ const ChatContext = createContext<ChatContextType | undefined>(undefined);
 export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
   const [chats, setChats] = useState<Chat[]>([]);
+  const [requests, setRequests] = useState<any[]>([]);
   const [activeChat, setActiveChat] = useState<Chat | null>(null);
   const [messages, setMessages] = useState<any[]>([]);
   const wsRef = useRef<WebSocket | null>(null);
