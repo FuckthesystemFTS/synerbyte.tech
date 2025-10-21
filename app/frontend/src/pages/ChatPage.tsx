@@ -24,8 +24,10 @@ export const ChatPage: React.FC = () => {
   const [verifyingChatId, setVerifyingChatId] = useState<number | null>(null);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [showSidebar, setShowSidebar] = useState(true);
+  const [showScrollTop, setShowScrollTop] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!user) {
@@ -212,6 +214,18 @@ export const ChatPage: React.FC = () => {
     }
   };
 
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLDivElement;
+    // Show scroll-to-top button if scrolled down more than 200px
+    setShowScrollTop(target.scrollTop > 200);
+  };
+
+  const scrollToTop = () => {
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   return (
     <div style={{ display: 'flex', height: '100vh', fontFamily: 'Arial, sans-serif', overflow: 'hidden' }}>
       {/* Sidebar */}
@@ -385,15 +399,19 @@ export const ChatPage: React.FC = () => {
             </div>
 
             {/* Messages */}
-            <div style={{ 
-              flex: 1, 
-              overflowY: 'auto', 
-              overflowX: 'hidden',
-              padding: '15px', 
-              WebkitOverflowScrolling: 'touch',
-              display: 'flex',
-              flexDirection: 'column'
-            }}>
+            <div 
+              ref={messagesContainerRef}
+              onScroll={handleScroll}
+              style={{ 
+                flex: 1, 
+                overflowY: 'auto', 
+                overflowX: 'hidden',
+                padding: '15px', 
+                WebkitOverflowScrolling: 'touch',
+                display: 'flex',
+                flexDirection: 'column',
+                position: 'relative'
+              }}>
               {messages.map((msg, idx) => {
                 const isOwn = msg.sender_id === user.id;
                 return (
@@ -424,6 +442,36 @@ export const ChatPage: React.FC = () => {
                 );
               })}
               <div ref={messagesEndRef} />
+              
+              {/* Floating Scroll to Top Button */}
+              {showScrollTop && (
+                <button
+                  onClick={scrollToTop}
+                  style={{
+                    position: 'fixed',
+                    bottom: isMobile ? '80px' : '100px',
+                    right: isMobile ? '20px' : '40px',
+                    width: '50px',
+                    height: '50px',
+                    borderRadius: '50%',
+                    background: '#3498db',
+                    color: 'white',
+                    border: 'none',
+                    fontSize: '24px',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+                    zIndex: 1000,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'all 0.3s ease'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
+                  onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                >
+                  ↑
+                </button>
+              )}
             </div>
 
             {/* Message Input - FIXED AT BOTTOM */}

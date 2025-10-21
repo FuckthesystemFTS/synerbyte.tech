@@ -296,8 +296,16 @@ async def websocket_endpoint(websocket: WebSocket):
         return
     
     # Verify token
-    session = db.get_session(token)
+    session = db.get_token(token)
     if not session:
+        await websocket.close(code=1008)
+        return
+    
+    # Check token expiry
+    from datetime import datetime
+    expires_at = datetime.fromisoformat(session['expires_at'])
+    if datetime.now() > expires_at:
+        db.delete_token(token)
         await websocket.close(code=1008)
         return
     
