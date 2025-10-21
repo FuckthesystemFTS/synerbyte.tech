@@ -26,7 +26,6 @@ export const ChatPage: React.FC = () => {
   const [showSidebar, setShowSidebar] = useState(true);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -47,47 +46,18 @@ export const ChatPage: React.FC = () => {
   }, [messages]);
 
   useEffect(() => {
-    // Auto-refresh messages every 3 seconds when chat is active
+    // Handle sidebar visibility on mobile
     if (activeChat) {
       // Hide sidebar on mobile when chat is selected
       if (isMobile) {
         setShowSidebar(false);
       }
-      
-      // Clear existing interval
-      if (refreshIntervalRef.current) {
-        clearInterval(refreshIntervalRef.current);
-      }
-      
-      // Set new interval for auto-refresh
-      refreshIntervalRef.current = setInterval(async () => {
-        try {
-          const response = await api.getMessages(activeChat.id);
-          // Only update if messages changed
-          if (JSON.stringify(response.messages) !== JSON.stringify(messages)) {
-            // Messages will be updated via ChatContext
-          }
-        } catch (error) {
-          console.error('Auto-refresh failed:', error);
-        }
-      }, 3000);
     } else {
       // Show sidebar when no chat selected
       if (isMobile) {
         setShowSidebar(true);
       }
-      
-      // Clear interval when no active chat
-      if (refreshIntervalRef.current) {
-        clearInterval(refreshIntervalRef.current);
-      }
     }
-    
-    return () => {
-      if (refreshIntervalRef.current) {
-        clearInterval(refreshIntervalRef.current);
-      }
-    };
   }, [activeChat, isMobile]);
 
   useEffect(() => {
@@ -322,20 +292,25 @@ export const ChatPage: React.FC = () => {
         display: (isMobile && showSidebar) ? 'none' : 'flex', 
         flexDirection: 'column', 
         background: '#ecf0f1',
-        width: isMobile ? '100%' : 'auto'
+        width: isMobile ? '100%' : 'auto',
+        position: 'relative'
       }}>
         {activeChat ? (
           <>
-            {/* Chat Header */}
+            {/* Chat Header - FIXED AT TOP */}
             <div style={{ 
-              padding: isMobile ? '15px 10px' : '20px', 
+              padding: isMobile ? '12px 10px' : '20px', 
               background: 'white', 
               borderBottom: '2px solid #bdc3c7', 
               display: 'flex', 
               alignItems: 'center', 
               justifyContent: 'space-between',
               flexWrap: 'wrap',
-              gap: '10px'
+              gap: '10px',
+              position: 'sticky',
+              top: 0,
+              zIndex: 100,
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
                 {isMobile && (
@@ -410,23 +385,39 @@ export const ChatPage: React.FC = () => {
             </div>
 
             {/* Messages */}
-            <div style={{ flex: 1, overflowY: 'auto', padding: isMobile ? '10px' : '20px', WebkitOverflowScrolling: 'touch' }}>
+            <div style={{ 
+              flex: 1, 
+              overflowY: 'auto', 
+              overflowX: 'hidden',
+              padding: '15px', 
+              WebkitOverflowScrolling: 'touch',
+              display: 'flex',
+              flexDirection: 'column'
+            }}>
               {messages.map((msg, idx) => {
                 const isOwn = msg.sender_id === user.id;
                 return (
-                  <div key={idx} style={{ marginBottom: '15px', display: 'flex', justifyContent: isOwn ? 'flex-end' : 'flex-start' }}>
+                  <div key={idx} style={{ 
+                    marginBottom: '12px', 
+                    display: 'flex', 
+                    justifyContent: isOwn ? 'flex-end' : 'flex-start',
+                    width: '100%'
+                  }}>
                     <div style={{
-                      maxWidth: '60%',
-                      padding: '12px 16px',
-                      borderRadius: '12px',
+                      maxWidth: isMobile ? '75%' : '60%',
+                      minWidth: '80px',
+                      padding: '10px 14px',
+                      borderRadius: isOwn ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
                       background: isOwn ? '#3498db' : 'white',
                       color: isOwn ? 'white' : '#2c3e50',
-                      boxShadow: '0 2px 5px rgba(0,0,0,0.1)'
+                      boxShadow: '0 1px 2px rgba(0,0,0,0.15)',
+                      wordWrap: 'break-word',
+                      wordBreak: 'break-word'
                     }}>
-                      {!isOwn && <div style={{ fontSize: '12px', fontWeight: '600', marginBottom: '5px', opacity: 0.8 }}>{msg.username || msg.email}</div>}
+                      {!isOwn && <div style={{ fontSize: '11px', fontWeight: '600', marginBottom: '4px', opacity: 0.9 }}>{msg.username || msg.email}</div>}
                       <MessageContent content={msg.encrypted_content} chatId={activeChat.id} messageType={msg.message_type || 'text'} />
-                      <div style={{ fontSize: '10px', marginTop: '5px', opacity: 0.7 }}>
-                        {new Date(msg.created_at).toLocaleTimeString()}
+                      <div style={{ fontSize: '9px', marginTop: '4px', opacity: 0.7, textAlign: 'right' }}>
+                        {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </div>
                     </div>
                   </div>
@@ -435,8 +426,16 @@ export const ChatPage: React.FC = () => {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Message Input */}
-            <form onSubmit={handleSendMessage} style={{ padding: isMobile ? '10px' : '20px', background: 'white', borderTop: '2px solid #bdc3c7' }}>
+            {/* Message Input - FIXED AT BOTTOM */}
+            <form onSubmit={handleSendMessage} style={{ 
+              padding: isMobile ? '10px' : '20px', 
+              background: 'white', 
+              borderTop: '2px solid #bdc3c7',
+              position: 'sticky',
+              bottom: 0,
+              zIndex: 100,
+              boxShadow: '0 -2px 4px rgba(0,0,0,0.1)'
+            }}>
               <div style={{ display: 'flex', gap: '10px' }}>
                 <input
                   type="text"

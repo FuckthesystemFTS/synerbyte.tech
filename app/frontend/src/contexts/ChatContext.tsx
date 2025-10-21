@@ -92,9 +92,9 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     switch (data.type) {
       case 'message':
       case 'new_message':
-        // Add message to list if it's for active chat
+        // Immediately reload messages for active chat
         if (activeChat && data.data.chat_id === activeChat.id) {
-          setMessages(prev => [...prev, data.data]);
+          loadMessages(activeChat.id);
         }
         // Refresh chats to update last message
         refreshChats();
