@@ -22,8 +22,11 @@ export const ChatPage: React.FC = () => {
   const [showVerification, setShowVerification] = useState(false);
   const [verificationCode, setVerificationCode] = useState('');
   const [verifyingChatId, setVerifyingChatId] = useState<number | null>(null);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  const [showSidebar, setShowSidebar] = useState(true);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -32,8 +35,60 @@ export const ChatPage: React.FC = () => {
   }, [user, navigate]);
 
   useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  useEffect(() => {
+    // Auto-refresh messages every 3 seconds when chat is active
+    if (activeChat) {
+      // Hide sidebar on mobile when chat is selected
+      if (isMobile) {
+        setShowSidebar(false);
+      }
+      
+      // Clear existing interval
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current);
+      }
+      
+      // Set new interval for auto-refresh
+      refreshIntervalRef.current = setInterval(async () => {
+        try {
+          const response = await api.getMessages(activeChat.id);
+          // Only update if messages changed
+          if (JSON.stringify(response.messages) !== JSON.stringify(messages)) {
+            // Messages will be updated via ChatContext
+          }
+        } catch (error) {
+          console.error('Auto-refresh failed:', error);
+        }
+      }, 3000);
+    } else {
+      // Show sidebar when no chat selected
+      if (isMobile) {
+        setShowSidebar(true);
+      }
+      
+      // Clear interval when no active chat
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current);
+      }
+    }
+    
+    return () => {
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current);
+      }
+    };
+  }, [activeChat, isMobile]);
 
   useEffect(() => {
     // Check for verification needed
@@ -180,10 +235,26 @@ export const ChatPage: React.FC = () => {
 
   if (!user) return null;
 
+  const handleBackToList = () => {
+    setActiveChat(null);
+    if (isMobile) {
+      setShowSidebar(true);
+    }
+  };
+
   return (
-    <div style={{ display: 'flex', height: '100vh', fontFamily: 'Arial, sans-serif' }}>
+    <div style={{ display: 'flex', height: '100vh', fontFamily: 'Arial, sans-serif', overflow: 'hidden' }}>
       {/* Sidebar */}
-      <div style={{ width: '300px', background: '#2c3e50', color: 'white', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ 
+        width: isMobile ? '100%' : '300px', 
+        background: '#2c3e50', 
+        color: 'white', 
+        display: (isMobile && !showSidebar) ? 'none' : 'flex', 
+        flexDirection: 'column',
+        position: isMobile ? 'absolute' : 'relative',
+        height: '100%',
+        zIndex: isMobile ? 10 : 1
+      }}>
         {/* Header */}
         <div style={{ padding: '20px', borderBottom: '1px solid #34495e' }}>
           <div style={{ display: 'flex', alignItems: 'center', marginBottom: '15px' }}>
@@ -246,61 +317,100 @@ export const ChatPage: React.FC = () => {
       </div>
 
       {/* Main Chat Area */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#ecf0f1' }}>
+      <div style={{ 
+        flex: 1, 
+        display: (isMobile && showSidebar) ? 'none' : 'flex', 
+        flexDirection: 'column', 
+        background: '#ecf0f1',
+        width: isMobile ? '100%' : 'auto'
+      }}>
         {activeChat ? (
           <>
             {/* Chat Header */}
-            <div style={{ padding: '20px', background: 'white', borderBottom: '2px solid #bdc3c7', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div>
-                <div style={{ fontWeight: 'bold', fontSize: '18px', color: '#2c3e50' }}>
+            <div style={{ 
+              padding: isMobile ? '15px 10px' : '20px', 
+              background: 'white', 
+              borderBottom: '2px solid #bdc3c7', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '10px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
+                {isMobile && (
+                  <button
+                    onClick={handleBackToList}
+                    style={{
+                      background: '#3498db',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '50%',
+                      width: '36px',
+                      height: '36px',
+                      cursor: 'pointer',
+                      fontSize: '18px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    ←
+                  </button>
+                )}
+                <div>
+                  <div style={{ fontWeight: 'bold', fontSize: isMobile ? '16px' : '18px', color: '#2c3e50' }}>
                   {activeChat.other_user.username || activeChat.other_user.email}
                 </div>
                 <div style={{ fontSize: '12px', color: '#7f8c8d' }}>
-                  {activeChat.verification_pending ? '⚠️ Verification required' : '🔒 End-to-end encrypted'}
+                    {activeChat.verification_pending ? '⚠️ Verification required' : '🔒 End-to-end encrypted'}
+                  </div>
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: '10px' }}>
+              <div style={{ display: 'flex', gap: isMobile ? '5px' : '10px', flexWrap: 'wrap' }}>
                 <button
                   onClick={handleClearChat}
                   style={{
-                    padding: '8px 16px',
+                    padding: isMobile ? '6px 12px' : '8px 16px',
                     background: '#f39c12',
                     color: 'white',
                     border: 'none',
                     borderRadius: '5px',
                     cursor: 'pointer',
-                    fontSize: '14px',
+                    fontSize: isMobile ? '12px' : '14px',
                     fontWeight: '500'
                   }}
                 >
-                  🗑️ Clear Chat
+                  {isMobile ? '🗑️' : '🗑️ Clear Chat'}
                 </button>
                 <button
                   onClick={handleDeleteChat}
                   style={{
-                    padding: '8px 16px',
+                    padding: isMobile ? '6px 12px' : '8px 16px',
                     background: '#e74c3c',
                     color: 'white',
                     border: 'none',
                     borderRadius: '5px',
                     cursor: 'pointer',
-                    fontSize: '14px',
+                    fontSize: isMobile ? '12px' : '14px',
                     fontWeight: '500'
                   }}
                 >
-                  ❌ Delete Chat
+                  {isMobile ? '❌' : '❌ Delete Chat'}
                 </button>
+                {!isMobile && (
+                  <button
+                    onClick={refreshChats}
+                    style={{ padding: '8px 15px', background: '#3498db', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
+                  >
+                    Refresh
+                  </button>
+                )}
               </div>
-              <button
-                onClick={refreshChats}
-                style={{ padding: '8px 15px', background: '#3498db', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
-              >
-                Refresh
-              </button>
             </div>
 
             {/* Messages */}
-            <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
+            <div style={{ flex: 1, overflowY: 'auto', padding: isMobile ? '10px' : '20px', WebkitOverflowScrolling: 'touch' }}>
               {messages.map((msg, idx) => {
                 const isOwn = msg.sender_id === user.id;
                 return (
@@ -326,17 +436,17 @@ export const ChatPage: React.FC = () => {
             </div>
 
             {/* Message Input */}
-            <form onSubmit={handleSendMessage} style={{ padding: '20px', background: 'white', borderTop: '2px solid #bdc3c7' }}>
+            <form onSubmit={handleSendMessage} style={{ padding: isMobile ? '10px' : '20px', background: 'white', borderTop: '2px solid #bdc3c7' }}>
               <div style={{ display: 'flex', gap: '10px' }}>
                 <input
                   type="text"
                   value={messageInput}
                   onChange={(e) => setMessageInput(e.target.value)}
                   placeholder="Type a message..."
-                  style={{ flex: 1, padding: '12px', border: '2px solid #bdc3c7', borderRadius: '8px', fontSize: '14px' }}
+                  style={{ flex: 1, padding: isMobile ? '10px' : '12px', border: '2px solid #bdc3c7', borderRadius: '8px', fontSize: '14px' }}
                 />
-                <label style={{ padding: '12px 20px', background: '#95a5a6', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600', display: 'flex', alignItems: 'center' }}>
-                  📎 Image
+                <label style={{ padding: isMobile ? '10px 15px' : '12px 20px', background: '#95a5a6', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600', display: 'flex', alignItems: 'center' }}>
+                  {isMobile ? '📎' : '📎 Image'}
                   <input
                     type="file"
                     accept="image/*"
@@ -346,9 +456,9 @@ export const ChatPage: React.FC = () => {
                 </label>
                 <button
                   type="submit"
-                  style={{ padding: '12px 30px', background: '#3498db', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}
+                  style={{ padding: isMobile ? '10px 20px' : '12px 30px', background: '#3498db', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}
                 >
-                  Send
+                  {isMobile ? '➤' : 'Send'}
                 </button>
               </div>
             </form>
