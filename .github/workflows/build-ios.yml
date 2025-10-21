@@ -51,6 +51,10 @@ jobs:
             -configuration Debug \
             -destination 'generic/platform=iOS' \
             -archivePath $PWD/build/App.xcarchive \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_ENTITLEMENTS="" \
             archive
       
       - name: Prepare export options
@@ -67,7 +71,10 @@ jobs:
           xcodebuild -exportArchive \
             -archivePath $PWD/build/App.xcarchive \
             -exportPath $PWD/build \
-            -exportOptionsPlist exportOptions.plist
+            -exportOptionsPlist exportOptions.plist \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO
       
       - name: Upload IPA artifact
         uses: actions/upload-artifact@v4
