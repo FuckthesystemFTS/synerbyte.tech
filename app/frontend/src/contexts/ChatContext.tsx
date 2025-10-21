@@ -53,10 +53,11 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const ws = api.createWebSocket();
       
       ws.onopen = () => {
-        console.log('WebSocket connected');
+        console.log('✅ WebSocket connected successfully');
       };
 
       ws.onmessage = (event) => {
+        console.log('📩 Raw WebSocket message:', event.data);
         const data = JSON.parse(event.data);
         handleWebSocketMessage(data);
       };
@@ -89,12 +90,18 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const handleWebSocketMessage = (data: any) => {
+    console.log('🔔 WebSocket message received:', data);
     switch (data.type) {
       case 'message':
       case 'new_message':
+        console.log('📨 New message event:', data.data);
+        console.log('📍 Active chat:', activeChat);
         // Immediately reload messages for active chat
         if (activeChat && data.data.chat_id === activeChat.id) {
+          console.log('✅ Reloading messages for chat:', activeChat.id);
           loadMessages(activeChat.id);
+        } else {
+          console.log('⚠️ Message not for active chat or no active chat');
         }
         // Refresh chats to update last message
         refreshChats();
