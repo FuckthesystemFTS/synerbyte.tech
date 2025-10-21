@@ -5,10 +5,7 @@ const config: CapacitorConfig = {
   appName: 'SynerChat',
   webDir: 'dist',
   server: {
-    androidScheme: 'https',
-    iosScheme: 'https',
-    hostname: 'app.synerchat.com',
-    cleartext: true
+    androidScheme: 'https'
   },
   plugins: {
     SplashScreen: {

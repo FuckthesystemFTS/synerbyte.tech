@@ -1,4 +1,8 @@
-const API_URL = window.location.hostname === 'localhost' ? 'http://localhost:8000' : '';
+// Detect if running in mobile app (Capacitor)
+const isMobileApp = window.location.protocol === 'capacitor:' || window.location.protocol === 'ionic:';
+const API_URL = isMobileApp 
+  ? 'https://synerchat-app-0fa5f01c44ee.herokuapp.com'
+  : (window.location.hostname === 'localhost' ? 'http://localhost:8000' : '');
 
 export interface User {
   id: number;
@@ -186,6 +190,10 @@ class ApiClient {
   createWebSocket(): WebSocket {
     if (!this.token) {
       throw new Error('No token available');
+    }
+    // Use Heroku URL for mobile app
+    if (isMobileApp) {
+      return new WebSocket(`wss://synerchat-app-0fa5f01c44ee.herokuapp.com/chat/ws?token=${this.token}`);
     }
     const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsHost = window.location.hostname === 'localhost' ? 'localhost:8000' : window.location.host;
