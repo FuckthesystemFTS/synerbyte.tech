@@ -142,8 +142,8 @@ export const Login: React.FC = () => {
           </div>
         </form>
 
-        {/* Mobile App Download Section - TEMPORANEAMENTE DISABILITATO */}
-        {false && <div style={{
+        {/* Mobile App Download Section */}
+        <div style={{
           marginTop: '30px',
           paddingTop: '25px',
           borderTop: '1px solid #e0e0e0'
@@ -243,7 +243,7 @@ export const Login: React.FC = () => {
               Android: Install APK • iOS: Use TestFlight or enterprise cert
             </p>
           </div>
-        </div>}
+        </div>
       </div>
     </div>
   );
