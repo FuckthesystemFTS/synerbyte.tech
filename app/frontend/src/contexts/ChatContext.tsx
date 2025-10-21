@@ -96,13 +96,35 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       case 'new_message':
         console.log('📨 New message event:', data.data);
         console.log('📍 Active chat:', activeChat);
-        // Immediately reload messages for active chat
+        
+        // Add message directly to state for instant display
         if (activeChat && data.data.chat_id === activeChat.id) {
-          console.log('✅ Reloading messages for chat:', activeChat.id);
-          loadMessages(activeChat.id);
+          console.log('✅ Adding message directly to state');
+          const newMessage = {
+            id: data.data.id,
+            chat_id: data.data.chat_id,
+            sender_id: data.data.sender_id,
+            encrypted_content: data.data.content,
+            message_type: data.data.message_type || 'text',
+            created_at: new Date().toISOString(),
+            username: data.data.sender_id === user?.id ? (user?.username || '') : activeChat.other_user.username,
+            email: data.data.sender_id === user?.id ? (user?.email || '') : activeChat.other_user.email
+          };
+          
+          // Add to messages array if not already present
+          setMessages(prev => {
+            const exists = prev.some(msg => msg.id === newMessage.id);
+            if (exists) {
+              console.log('⚠️ Message already in state, skipping');
+              return prev;
+            }
+            console.log('✅ Message added to state!');
+            return [...prev, newMessage];
+          });
         } else {
           console.log('⚠️ Message not for active chat or no active chat');
         }
+        
         // Refresh chats to update last message
         refreshChats();
         break;
