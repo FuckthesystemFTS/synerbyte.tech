@@ -18,33 +18,20 @@ Se NON hai ancora un repository GitHub:
 2. Nome: `synerchat`
 3. Click **Create repository**
 
-Poi esegui:
-
-```powershell
-cd C:\Users\Hp\Desktop\SYNERCHAT
-
-# Aggiungi remote GitHub (sostituisci TUO_USERNAME)
-git remote add origin https://github.com/TUO_USERNAME/synerchat.git
-
-# Push
-git branch -M main
-git push -u origin main
-```
-
-### **PASSO 2: Esegui Build iOS**
+### **PASSO 2: Esegui Build**
 
 1. Vai su: `https://github.com/TUO_USERNAME/synerchat/actions`
-2. Click su **Build iOS App** (a sinistra)
-3. Click su **Run workflow** (pulsante verde a destra)
-4. Click su **Run workflow** di nuovo
-5. ⏳ Aspetta 10-15 minuti
+2. Scegli **"Build iOS App"** o **"Build iOS App - Simple"**
+3. Click su **Run workflow** → **Run workflow**
+4. Aspetta 10-15 minuti ⏳
 
 ### **PASSO 3: Scarica IPA**
 
-1. Quando vedi ✅ verde, click sul workflow completato
-2. Scroll in basso → sezione **Artifacts**
-3. Download **synerchat-ios.zip**
-4. Estrai → trovi `synerchat.ipa`
+1. Quando vedi ✅ verde
+2. Click sul workflow
+3. Scroll giù → **Artifacts**
+4. Download **synerchat-ios.zip**
+5. Estrai → `synerchat.ipa`
 
 ---
 

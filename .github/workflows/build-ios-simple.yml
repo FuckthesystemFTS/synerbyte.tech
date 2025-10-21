@@ -1,0 +1,63 @@
+name: Build iOS App - Simple
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-ios:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        working-directory: app/frontend
+        run: |
+          npm install
+          npm install -g @capacitor/cli
+
+      - name: Build web app
+        working-directory: app/frontend
+        run: npm run build
+
+      - name: Setup iOS
+        working-directory: app/frontend
+        run: |
+          npx cap add ios || true
+          npx cap sync ios
+
+      - name: Build iOS
+        working-directory: app/frontend/ios/App
+        run: |
+          xcodebuild -workspace App.xcworkspace \
+            -scheme App \
+            -configuration Debug \
+            -destination 'generic/platform=iOS' \
+            -archivePath build/App.xcarchive \
+            archive
+
+      - name: Export IPA
+        working-directory: app/frontend/ios/App
+        run: |
+          cp ../../ios-export-options.plist exportOptions.plist
+          xcodebuild -exportArchive \
+            -archivePath build/App.xcarchive \
+            -exportPath build \
+            -exportOptionsPlist exportOptions.plist
+
+      - name: List files
+        working-directory: app/frontend/ios/App/build
+        run: ls -la
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: synerchat-ios
+          path: app/frontend/ios/App/build/*.ipa
+          if-no-files-found: error

@@ -39,7 +39,7 @@ jobs:
           npx cap sync ios
       
       - name: Setup Xcode
-        uses: maxim-lobanov/setup-xcode@v1
+        uses: maxim-lobanov/setup-xcode@v1.1
         with:
           xcode-version: latest-stable
       
@@ -74,6 +74,7 @@ jobs:
         with:
           name: synerchat-ios
           path: app/frontend/ios/App/build/*.ipa
+          if-no-files-found: error
           retention-days: 30
       
       - name: Copy IPA to downloads folder
