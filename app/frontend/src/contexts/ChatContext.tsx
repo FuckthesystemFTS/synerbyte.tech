@@ -22,9 +22,13 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { user } = useAuth();
   const [chats, setChats] = useState<Chat[]>([]);
   const [activeChat, setActiveChat] = useState<Chat | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [requests, setRequests] = useState<ChatRequest[]>([]);
+  const [messages, setMessages] = useState<any[]>([]);
   const wsRef = useRef<WebSocket | null>(null);
+  const activeChatRef = useRef<any>(null);
+
+  useEffect(() => {
+    activeChatRef.current = activeChat;
+  }, [activeChat]);
 
   useEffect(() => {
     if (user) {
@@ -95,10 +99,12 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       case 'message':
       case 'new_message':
         console.log('📨 New message event:', data.data);
-        console.log('📍 Active chat:', activeChat);
+        console.log('📍 Active chat from ref:', activeChatRef.current);
+        console.log('📍 Active chat from state:', activeChat);
         
         // Add message directly to state for instant display
-        if (activeChat && data.data.chat_id === activeChat.id) {
+        const currentActiveChat = activeChatRef.current;
+        if (currentActiveChat && data.data.chat_id === currentActiveChat.id) {
           console.log('✅ Adding message directly to state');
           const newMessage = {
             id: data.data.id,
@@ -107,8 +113,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
             encrypted_content: data.data.content,
             message_type: data.data.message_type || 'text',
             created_at: new Date().toISOString(),
-            username: data.data.sender_id === user?.id ? (user?.username || '') : activeChat.other_user.username,
-            email: data.data.sender_id === user?.id ? (user?.email || '') : activeChat.other_user.email
+            username: data.data.sender_id === user?.id ? (user?.username || '') : currentActiveChat.other_user.username,
+            email: data.data.sender_id === user?.id ? (user?.email || '') : currentActiveChat.other_user.email
           };
           
           // Add to messages array if not already present
