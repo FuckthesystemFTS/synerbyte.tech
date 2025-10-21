@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
     <key>method</key>
-    <string>development</string>
+    <string>ad-hoc</string>
     <key>teamID</key>
     <string></string>
     <key>compileBitcode</key>
@@ -12,5 +12,7 @@
     <false/>
     <key>signingStyle</key>
     <string>automatic</string>
+    <key>stripSwiftSymbols</key>
+    <true/>
 </dict>
 </plist>
