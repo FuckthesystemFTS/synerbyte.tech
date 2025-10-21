@@ -1,0 +1,22 @@
+Per generare le app APK e IPA, segui questi passi:
+
+1. ANDROID APK:
+   - Installa Android Studio
+   - Configura ANDROID_HOME
+   - Esegui: cd app/frontend/android && gradlew assembleDebug
+   - Copia APK da: android/app/build/outputs/apk/debug/app-debug.apk
+   - A: app/backend/downloads/synerchat.apk
+
+2. iOS IPA (solo su macOS):
+   - Installa Xcode
+   - Esegui: cd app/frontend && npx cap add ios
+   - Apri in Xcode: npx cap open ios
+   - Archive e Export IPA
+   - Copia a: app/backend/downloads/synerchat.ipa
+
+3. Deploy su Heroku:
+   git add app/backend/downloads/
+   git commit -m "Add mobile apps"
+   git push heroku master
+
+Per ora i pulsanti download sono attivi ma i file devono essere generati localmente.
