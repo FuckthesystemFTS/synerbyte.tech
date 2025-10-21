@@ -33,17 +33,29 @@ class ConnectionManager:
     
     async def send_personal_message(self, message: dict, user_id: int):
         """Send message to all connections of a specific user"""
+        print(f"📤 Attempting to send to user {user_id}")
+        print(f"📊 Active connections: {list(self.active_connections.keys())}")
+        
         if user_id in self.active_connections:
+            print(f"✅ User {user_id} has {len(self.active_connections[user_id])} active connections")
             disconnected = []
+            sent_count = 0
             for connection in self.active_connections[user_id]:
                 try:
                     await connection.send_json(message)
-                except:
+                    sent_count += 1
+                    print(f"✅ Message sent to connection {sent_count}")
+                except Exception as e:
+                    print(f"❌ Failed to send to connection: {e}")
                     disconnected.append(connection)
+            
+            print(f"📨 Sent to {sent_count} connections, {len(disconnected)} failed")
             
             # Clean up disconnected
             for conn in disconnected:
                 self.disconnect(conn, user_id)
+        else:
+            print(f"⚠️ User {user_id} has NO active WebSocket connections!")
     
     async def send_to_chat(self, message: dict, chat_id: int, exclude_user_id: int = None):
         """Send message to all participants in a chat"""
