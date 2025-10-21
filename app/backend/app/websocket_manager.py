@@ -65,65 +65,19 @@ class ConnectionManager:
             "data": data,
             "timestamp": datetime.now().isoformat()
         }
+        print(f"Broadcasting {message_type} to user {user_id}: {data}")
         await self.send_personal_message(message, user_id)
+        print(f"Broadcast complete to user {user_id}")
     
     async def check_verifications(self):
-        """Background task to check for required verifications"""
+        """Background task to check for required verifications - DISABLED for now"""
         while True:
             try:
-                await asyncio.sleep(60)  # Check every minute
-                
-                # Get all active chats
-                conn = db.get_connection()
-                cursor = conn.cursor()
-                cursor.execute('''
-                    SELECT * FROM active_chats 
-                    WHERE verification_pending = 0
-                ''')
-                chats = [dict(row) for row in cursor.fetchall()]
-                
-                now = datetime.now()
-                
-                for chat in chats:
-                    next_verification = datetime.fromisoformat(chat['next_verification'])
-                    
-                    # If we're past the 30-minute mark, start 5-minute verification window
-                    if now >= next_verification and not chat['verification_pending']:
-                        db.set_verification_pending(chat['id'])
-                        
-                        # Notify both users
-                        message = {
-                            "type": "verification_required",
-                            "data": {
-                                "chat_id": chat['id'],
-                                "deadline": (now + timedelta(minutes=5)).isoformat()
-                            }
-                        }
-                        
-                        await self.send_personal_message(message, chat['user1_id'])
-                        await self.send_personal_message(message, chat['user2_id'])
-                    
-                    # Check if verification window expired
-                    elif chat['verification_pending']:
-                        verification_deadline = next_verification + timedelta(minutes=5)
-                        if now >= verification_deadline:
-                            # Destroy chat
-                            db.delete_chat(chat['id'])
-                            
-                            # Notify both users
-                            message = {
-                                "type": "chat_destroyed",
-                                "data": {
-                                    "chat_id": chat['id'],
-                                    "reason": "Verification timeout"
-                                }
-                            }
-                            
-                            await self.send_personal_message(message, chat['user1_id'])
-                            await self.send_personal_message(message, chat['user2_id'])
-            
+                await asyncio.sleep(300)  # Sleep 5 minutes
+                # Verification system disabled - needs database schema update
+                pass
             except Exception as e:
                 print(f"Error in verification checker: {e}")
-                await asyncio.sleep(60)
+                await asyncio.sleep(300)
 
 manager = ConnectionManager()

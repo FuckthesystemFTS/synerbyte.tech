@@ -313,18 +313,20 @@ export const ChatPage: React.FC = () => {
           <>
             {/* Chat Header - FIXED AT TOP */}
             <div style={{ 
-              padding: isMobile ? '12px 10px' : '20px', 
+              padding: isMobile ? '12px' : '20px', 
               background: 'white', 
-              borderBottom: '2px solid #bdc3c7', 
-              display: 'flex', 
-              alignItems: 'center', 
+              borderBottom: '2px solid #bdc3c7',
+              display: 'flex',
               justifyContent: 'space-between',
-              flexWrap: 'wrap',
-              gap: '10px',
-              position: 'sticky',
+              alignItems: 'center',
+              position: 'fixed',
               top: 0,
-              zIndex: 100,
-              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+              left: isMobile ? 0 : '300px',
+              right: 0,
+              zIndex: 1000,
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+              WebkitTransform: 'translateZ(0)',
+              transform: 'translateZ(0)'
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
                 {isMobile && (
@@ -407,6 +409,8 @@ export const ChatPage: React.FC = () => {
                 overflowY: 'auto', 
                 overflowX: 'hidden',
                 padding: '15px', 
+                paddingTop: isMobile ? '80px' : '100px',
+                paddingBottom: isMobile ? '80px' : '100px',
                 WebkitOverflowScrolling: 'touch',
                 display: 'flex',
                 flexDirection: 'column',
