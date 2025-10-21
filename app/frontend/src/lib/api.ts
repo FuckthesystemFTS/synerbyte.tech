@@ -1,8 +1,18 @@
 // Detect if running in mobile app (Capacitor)
-const isMobileApp = window.location.protocol === 'capacitor:' || window.location.protocol === 'ionic:';
+const isMobileApp = window.location.protocol === 'capacitor:' || 
+                    window.location.protocol === 'ionic:' ||
+                    window.location.protocol === 'https:' && window.location.hostname === 'localhost';
+
 const API_URL = isMobileApp 
   ? 'https://synerchat-app-0fa5f01c44ee.herokuapp.com'
   : (window.location.hostname === 'localhost' ? 'http://localhost:8000' : '');
+
+console.log('🔍 API Configuration:', {
+  protocol: window.location.protocol,
+  hostname: window.location.hostname,
+  isMobileApp,
+  API_URL
+});
 
 export interface User {
   id: number;
