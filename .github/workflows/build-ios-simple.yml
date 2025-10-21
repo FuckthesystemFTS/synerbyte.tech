@@ -30,7 +30,16 @@ jobs:
         working-directory: app/frontend
         run: |
           npx cap add ios || true
+
+      - name: Sync Capacitor
+        working-directory: app/frontend
+        run: |
           npx cap sync ios
+
+      - name: Disable code signing in Xcode project
+        working-directory: app/frontend
+        run: |
+          python3 disable_code_signing.py ios/App/App.xcodeproj
 
       - name: Build iOS
         working-directory: app/frontend/ios/App
