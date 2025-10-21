@@ -15,10 +15,10 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '18'
       
@@ -53,6 +53,14 @@ jobs:
             -archivePath $PWD/build/App.xcarchive \
             archive
       
+      - name: Prepare export options
+        working-directory: app/frontend/ios/App
+        run: |
+          # If exportOptions.plist is not present in this folder, copy the provided one
+          if [ ! -f "exportOptions.plist" ]; then
+            cp ../../ios-export-options.plist ./exportOptions.plist
+          fi
+
       - name: Export IPA
         working-directory: app/frontend/ios/App
         run: |
@@ -62,7 +70,7 @@ jobs:
             -exportOptionsPlist exportOptions.plist
       
       - name: Upload IPA artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: synerchat-ios
           path: app/frontend/ios/App/build/*.ipa
