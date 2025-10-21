@@ -118,14 +118,17 @@ export const ChatPage: React.FC = () => {
     e.preventDefault();
     if (!messageInput.trim() || !activeChat) return;
 
+    const messageText = messageInput.trim();
+    setMessageInput(''); // Clear input immediately for better UX
+
     try {
       // Encrypt message using chat ID as shared secret
       const sharedSecret = `chat_${activeChat.id}_secret`;
-      const encrypted = await crypto.encryptSimple(messageInput, sharedSecret);
-      sendMessage(encrypted);
-      setMessageInput('');
+      const encrypted = await crypto.encryptSimple(messageText, sharedSecret);
+      await sendMessage(encrypted);
     } catch (error: any) {
-      alert('Failed to send message: ' + error.message);
+      console.error('Failed to send message:', error);
+      // Message will show as failed with retry mechanism
     }
   };
 
@@ -418,8 +421,11 @@ export const ChatPage: React.FC = () => {
               }}>
               {messages.map((msg, idx) => {
                 const isOwn = msg.sender_id === user.id;
+                const status = (msg as any).status;
+                const isTempMessage = typeof msg.id === 'string' && msg.id.startsWith('temp_');
+                
                 return (
-                  <div key={idx} style={{ 
+                  <div key={msg.id || idx} style={{ 
                     marginBottom: '12px', 
                     display: 'flex', 
                     justifyContent: isOwn ? 'flex-end' : 'flex-start',
@@ -430,16 +436,26 @@ export const ChatPage: React.FC = () => {
                       minWidth: '80px',
                       padding: '10px 14px',
                       borderRadius: isOwn ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
-                      background: isOwn ? '#3498db' : 'white',
+                      background: isOwn ? (status === 'failed' ? '#e74c3c' : '#3498db') : 'white',
                       color: isOwn ? 'white' : '#2c3e50',
                       boxShadow: '0 1px 2px rgba(0,0,0,0.15)',
                       wordWrap: 'break-word',
-                      wordBreak: 'break-word'
+                      wordBreak: 'break-word',
+                      opacity: status === 'sending' ? 0.7 : 1,
+                      position: 'relative'
                     }}>
                       {!isOwn && <div style={{ fontSize: '11px', fontWeight: '600', marginBottom: '4px', opacity: 0.9 }}>{msg.username || msg.email}</div>}
                       <MessageContent content={msg.encrypted_content} chatId={activeChat.id} messageType={msg.message_type || 'text'} />
-                      <div style={{ fontSize: '9px', marginTop: '4px', opacity: 0.7, textAlign: 'right' }}>
-                        {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      <div style={{ fontSize: '9px', marginTop: '4px', opacity: 0.7, textAlign: 'right', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '4px' }}>
+                        <span>{new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                        {isOwn && (
+                          <span style={{ fontSize: '11px' }}>
+                            {status === 'sending' && '⏳'}
+                            {status === 'sent' && '✓'}
+                            {status === 'failed' && '✗'}
+                            {!status && !isTempMessage && '✓✓'}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>

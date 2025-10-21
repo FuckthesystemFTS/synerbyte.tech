@@ -143,7 +143,10 @@ async def send_message(message: Message, user: dict = Depends(verify_token)):
     if chat['user1_id'] != user['id'] and chat['user2_id'] != user['id']:
         raise HTTPException(status_code=403, detail="Not authorized")
     
-    # Save message
+    # Save message with timestamp
+    from datetime import datetime
+    created_at = datetime.now().isoformat()
+    
     message_id = db.create_message(
         chat_id=message.chat_id,
         sender_id=user['id'],
@@ -154,21 +157,34 @@ async def send_message(message: Message, user: dict = Depends(verify_token)):
     # Get other user ID
     other_user_id = chat['user2_id'] if chat['user1_id'] == user['id'] else chat['user1_id']
     
-    # Send via WebSocket to both users
+    # Get sender info for display
+    sender_info = {
+        "id": user['id'],
+        "username": user.get('username'),
+        "email": user['email']
+    }
+    
+    # Send via WebSocket to both users with complete data
     message_data = {
         "id": message_id,
         "chat_id": message.chat_id,
         "sender_id": user['id'],
         "content": message.content,
         "message_type": message.message_type or 'text',
-        "created_at": "now"
+        "created_at": created_at,
+        "sender": sender_info
     }
     
-    # Broadcast to both users in the chat
+    # Broadcast to both users in the chat immediately
     await manager.broadcast_to_user(other_user_id, "new_message", message_data)
     await manager.broadcast_to_user(user['id'], "new_message", message_data)
     
-    return {"message_id": message_id, "status": "sent"}
+    return {
+        "message_id": message_id, 
+        "status": "sent",
+        "created_at": created_at,
+        "data": message_data
+    }
 
 @router.post("/verify")
 async def verify_chat(verify: VerifyChat, user: dict = Depends(verify_token)):

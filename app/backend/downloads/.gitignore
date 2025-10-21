@@ -1,0 +1,6 @@
+# Allow APK and IPA files for Heroku deployment
+# These files need to be committed to be served by Heroku
+
+# Keep this folder structure
+!.gitignore
+!README.md

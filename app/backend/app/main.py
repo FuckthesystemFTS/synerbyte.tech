@@ -26,6 +26,29 @@ app.include_router(chat.router)
 async def healthz():
     return {'ok': True, 'version': '1.0.0'}
 
+# Serve mobile app downloads
+downloads_path = os.path.join(os.path.dirname(__file__), '../downloads')
+if not os.path.exists(downloads_path):
+    os.makedirs(downloads_path)
+
+@app.get("/downloads/{filename}")
+async def download_app(filename: str):
+    """Serve mobile app downloads (APK/IPA)"""
+    file_path = os.path.join(downloads_path, filename)
+    if os.path.exists(file_path) and os.path.isfile(file_path):
+        # Set appropriate content type
+        content_type = "application/vnd.android.package-archive" if filename.endswith('.apk') else "application/octet-stream"
+        return FileResponse(
+            file_path, 
+            media_type=content_type,
+            filename=filename,
+            headers={
+                "Content-Disposition": f"attachment; filename={filename}",
+                "Cache-Control": "no-cache"
+            }
+        )
+    return {"error": "File not found"}
+
 # Serve frontend static files
 frontend_path = os.path.join(os.path.dirname(__file__), '../static')
 if os.path.exists(frontend_path):
