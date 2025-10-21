@@ -422,7 +422,7 @@ export const ChatPage: React.FC = () => {
               {messages.map((msg, idx) => {
                 const isOwn = msg.sender_id === user.id;
                 const status = (msg as any).status;
-                const isTempMessage = typeof msg.id === 'string' && msg.id.startsWith('temp_');
+                const isTempMessage = typeof msg.id === 'string' && (msg.id as string).startsWith('temp_');
                 
                 return (
                   <div key={msg.id || idx} style={{ 

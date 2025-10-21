@@ -38,7 +38,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const activeChatRef = useRef<any>(null);
   const reconnectTimeoutRef = useRef<any>(null);
   const isConnectingRef = useRef<boolean>(false);
-  const messageQueueRef = useRef<PendingMessage[]>([]);
 
   useEffect(() => {
     activeChatRef.current = activeChat;
@@ -309,7 +308,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     // Attempt to send
     try {
-      const response = await api.sendMessage(activeChat.id, message, messageType);
+      const response: any = await api.sendMessage(activeChat.id, message, messageType);
       console.log('✅ Message sent successfully:', response);
       
       // Update optimistic message with real ID
@@ -368,7 +367,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     ));
     
     try {
-      const response = await api.sendMessage(activeChat.id, pending.content, pending.messageType);
+      const response: any = await api.sendMessage(activeChat.id, pending.content, pending.messageType);
       console.log('✅ Retry successful:', response);
       
       setMessages(prev => prev.map(msg => 
