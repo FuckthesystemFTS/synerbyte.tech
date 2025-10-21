@@ -32,19 +32,28 @@ jobs:
         working-directory: app/frontend
         run: npm run build
       
-      - name: Add iOS platform
+      - name: Setup iOS platform
         working-directory: app/frontend
         run: |
-          npx cap add ios || true
-      
-      - name: Sync Capacitor iOS
-        working-directory: app/frontend
-        run: npx cap sync ios
+          # Remove existing iOS directory if present
+          rm -rf ios
+          # Add iOS platform
+          npx cap add ios
+          # Sync Capacitor
+          npx cap sync ios
       
       - name: Disable code signing in Xcode project
         working-directory: app/frontend
         run: |
+          echo "Disabling code signing..."
           python3 disable_code_signing.py ios/App/App.xcodeproj
+          echo "Code signing disabled"
+      
+      - name: Verify project settings
+        working-directory: app/frontend/ios/App
+        run: |
+          echo "Checking for CODE_SIGN_STYLE in project..."
+          grep -A 2 "CODE_SIGN_STYLE" App.xcodeproj/project.pbxproj || echo "Not found"
       
       - name: Setup Xcode
         uses: maxim-lobanov/setup-xcode@v1.1
