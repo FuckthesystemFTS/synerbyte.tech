@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { api, User } from '../lib/api';
 import { crypto } from '../lib/crypto/encryption';
+import { pushNotificationService } from '../services/pushNotifications';
 
 interface AuthContextType {
   user: User | null;
@@ -32,6 +33,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               api.updateProfile(undefined, undefined, keys.publicKey);
             });
           }
+          // Initialize push notifications
+          pushNotificationService.initialize().catch(err => {
+            console.error('Failed to initialize push notifications:', err);
+          });
         })
         .catch(() => {
           localStorage.removeItem('token');
@@ -66,6 +71,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       crypto.saveKeys();
       await api.updateProfile(undefined, undefined, keys.publicKey);
     }
+    
+    // Initialize push notifications
+    try {
+      await pushNotificationService.initialize();
+    } catch (err) {
+      console.error('Failed to initialize push notifications:', err);
+    }
   };
 
   const register = async (email: string, password: string, username?: string, profilePicture?: string) => {
@@ -82,6 +94,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     api.logout();
     crypto.clearKeys();
     setUser(null);
+    
+    // Unregister push notifications
+    pushNotificationService.unregister().catch(err => {
+      console.error('Failed to unregister push notifications:', err);
+    });
   };
 
   const updateProfile = async (username?: string, profilePicture?: string) => {

@@ -4,6 +4,7 @@ from ..models import ChatRequest, AcceptChatRequest, Message, VerifyChat, Search
 from ..database import db
 from ..auth import verify_token
 from ..websocket_manager import manager
+from .notifications import send_new_message_notification
 import json
 
 router = APIRouter(prefix="/chat", tags=["chat"])
@@ -178,6 +179,12 @@ async def send_message(message: Message, user: dict = Depends(verify_token)):
     # Broadcast to both users in the chat immediately
     await manager.broadcast_to_user(other_user_id, "new_message", message_data)
     await manager.broadcast_to_user(user['id'], "new_message", message_data)
+    
+    # Send push notification to recipient (in background)
+    try:
+        await send_new_message_notification(other_user_id)
+    except Exception as e:
+        print(f"Failed to send push notification: {e}")
     
     return {
         "message_id": message_id, 

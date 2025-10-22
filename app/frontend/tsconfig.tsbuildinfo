@@ -1,1 +1,1 @@
-{"root":["./src/app.tsx","./src/main.tsx","./src/contexts/authcontext.tsx","./src/contexts/chatcontext.tsx","./src/lib/api.ts","./src/lib/crypto/encryption.ts","./src/pages/chatpage.tsx","./src/pages/login.tsx","./src/pages/register.tsx"],"version":"5.9.2"}
+{"root":["./src/app.tsx","./src/main.tsx","./src/contexts/authcontext.tsx","./src/contexts/chatcontext.tsx","./src/lib/api.ts","./src/lib/crypto/encryption.ts","./src/pages/chatpage.tsx","./src/pages/login.tsx","./src/pages/register.tsx","./src/services/pushnotifications.ts"],"version":"5.9.2"}

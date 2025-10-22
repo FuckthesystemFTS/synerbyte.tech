@@ -1,0 +1,34 @@
+{
+	"appId": "com.synerchat.app",
+	"appName": "SynerChat",
+	"webDir": "dist",
+	"server": {
+		"androidScheme": "https"
+	},
+	"plugins": {
+		"SplashScreen": {
+			"launchShowDuration": 2000,
+			"backgroundColor": "#2c3e50",
+			"showSpinner": true,
+			"spinnerColor": "#3498db"
+		},
+		"StatusBar": {
+			"style": "dark",
+			"backgroundColor": "#2c3e50"
+		},
+		"PushNotifications": {
+			"presentationOptions": [
+				"badge",
+				"sound",
+				"alert"
+			]
+		}
+	},
+	"android": {},
+	"packageClassList": [
+		"AppPlugin",
+		"PushNotificationsPlugin",
+		"SplashScreenPlugin",
+		"StatusBarPlugin"
+	]
+}

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "705134015643",
+    "project_id": "synerchat-5ab6c",
+    "storage_bucket": "synerchat-5ab6c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:705134015643:android:25a952d4baa81d45bf023e",
+        "android_client_info": {
+          "package_name": "com.synerchat.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAKjl0spmf7ZVlYseJPK7-LJLXfHRAW5VU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

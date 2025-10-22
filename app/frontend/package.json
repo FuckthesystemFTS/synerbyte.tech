@@ -21,6 +21,7 @@
     "@capacitor/app": "^6.0.0",
     "@capacitor/core": "^6.0.0",
     "@capacitor/ios": "^6.0.0",
+    "@capacitor/push-notifications": "^7.0.3",
     "@capacitor/splash-screen": "^6.0.0",
     "@capacitor/status-bar": "^6.0.0",
     "ethers": "^6.13.2",

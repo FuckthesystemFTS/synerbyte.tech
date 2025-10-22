@@ -75,6 +75,16 @@ class ChatDeletionRequest(Base):
     requester_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+class FCMToken(Base):
+    __tablename__ = 'fcm_tokens'
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    token = Column(String, unique=True, nullable=False, index=True)
+    device_type = Column(String)  # 'android' or 'ios'
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
 # Database wrapper class
 class Database:
     def __init__(self):
@@ -545,6 +555,89 @@ class Database:
             session.rollback()
             print(f"Error deleting chat: {e}")
             return False
+        finally:
+            session.close()
+    
+    # FCM Token methods
+    def save_fcm_token(self, user_id: int, token: str, device_type: str = 'unknown') -> bool:
+        """Save or update FCM token for a user"""
+        session = self.get_session()
+        try:
+            # Check if token already exists
+            existing_token = session.query(FCMToken).filter(FCMToken.token == token).first()
+            
+            if existing_token:
+                # Update existing token
+                existing_token.user_id = user_id
+                existing_token.device_type = device_type
+                existing_token.updated_at = datetime.utcnow()
+            else:
+                # Create new token
+                fcm_token = FCMToken(
+                    user_id=user_id,
+                    token=token,
+                    device_type=device_type
+                )
+                session.add(fcm_token)
+            
+            session.commit()
+            return True
+        except Exception as e:
+            session.rollback()
+            print(f"Error saving FCM token: {e}")
+            return False
+        finally:
+            session.close()
+    
+    def get_user_fcm_tokens(self, user_id: int) -> List[str]:
+        """Get all FCM tokens for a user"""
+        session = self.get_session()
+        try:
+            tokens = session.query(FCMToken).filter(FCMToken.user_id == user_id).all()
+            return [token.token for token in tokens]
+        finally:
+            session.close()
+    
+    def delete_fcm_token(self, token: str) -> bool:
+        """Delete an FCM token"""
+        session = self.get_session()
+        try:
+            session.query(FCMToken).filter(FCMToken.token == token).delete()
+            session.commit()
+            return True
+        except Exception as e:
+            session.rollback()
+            print(f"Error deleting FCM token: {e}")
+            return False
+        finally:
+            session.close()
+    
+    def get_unread_message_count(self, user_id: int, chat_id: Optional[int] = None) -> int:
+        """Get count of unread messages for a user
+        
+        Note: This is a simplified version. In a real app, you'd track read status per message.
+        For now, we'll return the count of recent messages not sent by the user.
+        """
+        session = self.get_session()
+        try:
+            query = session.query(Message).filter(Message.sender_id != user_id)
+            
+            if chat_id:
+                query = query.filter(Message.chat_id == chat_id)
+            else:
+                # Get all chats for the user
+                user_chats = session.query(Chat).filter(
+                    (Chat.user1_id == user_id) | (Chat.user2_id == user_id)
+                ).all()
+                chat_ids = [chat.id for chat in user_chats]
+                query = query.filter(Message.chat_id.in_(chat_ids))
+            
+            # Count messages from the last hour (simplified unread logic)
+            from datetime import timedelta
+            one_hour_ago = datetime.utcnow() - timedelta(hours=1)
+            count = query.filter(Message.created_at >= one_hour_ago).count()
+            
+            return count
         finally:
             session.close()
 
